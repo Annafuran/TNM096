@@ -1,144 +1,130 @@
+
 import numpy as np
 import random
+import math
+from heapq import heappush, heappop, nsmallest, heappushpop, heapreplace
 
-#GLOBAL VARIABLE
 
-
-def changeGrandParent(newGrandParent):
-
-    grandparent = newGrandParent
-
-    return grandparent
-   
-
-#Calculating the herustic cost 
-def heruCost(tempNode, nodeList, deepCounter):
+#Calculating the herustic cost, multiple
+def heruCost(tempNode):
     GoalNode = ["1", "2", "3", "4", "5", "6", "7", "8", "0"]
     heruMis = 0
+    herDist = 0
 
     for i in range(9):
         if tempNode[i] != GoalNode[i]:
-            heruMis = heruMis +1
+            heruMis = heruMis + 1   
+    for i in tempNode:
+        herDist += math.fabs(tempNode.index(i)- GoalNode.index(i))
     
     # f = h + g
-    f = heruMis
+    f = heruMis + herDist
     #Adding the herustic cost to the list of costs
-    nodeList.append(f)
-    return nodeList
+    
+    return f
+
 
 #Finding all the possible moves
-def possibleMoves(NodeList, deepCounter):
+def possibleMoves(NodeList):
     ZeroLocation = NodeList.index("0")
     tempNode=[]
     tempNode.extend(NodeList)
     CostList = []
+    ResultList = []
+    result = {}
     
     if NodeList.index("0")+3 <=8:
         temp = tempNode[NodeList.index("0")]
         tempNode[NodeList.index("0")] = tempNode[NodeList.index("0")+3]
         tempNode[NodeList.index("0")+3] = temp
         #Saving the heuristic cost in a list 
-        CostList = heruCost(tempNode, CostList, deepCounter)
+        cost = heruCost(tempNode)
+        ResultList.append([cost, tempNode, "down"])
         tempNode=[]
         tempNode.extend(NodeList)
     else:
-        CostList.append(1000)
+        ResultList.append([1000, 1000, 1000])
 
     if NodeList.index("0")-3 >=0:
        temp = tempNode[NodeList.index("0")]
        tempNode[NodeList.index("0")] = tempNode[NodeList.index("0")-3]
        tempNode[NodeList.index("0")-3] = temp
        #Saving the heuristic cost in a list 
-       CostList = heruCost(tempNode, CostList, deepCounter)
+       cost = heruCost(tempNode)
+       ResultList.append([cost, tempNode, "up"])
        tempNode=[]
        tempNode.extend(NodeList)
     else:
-        CostList.append(1000)
+        ResultList.append([1000, 1000, 1000])
     
-    if NodeList.index("0")-1 >= 0:
+    if NodeList.index("0")-1 >= 0 and NodeList.index("0") != 3 and NodeList.index("0") != 6:
        temp = tempNode[NodeList.index("0")]
        tempNode[NodeList.index("0")] = tempNode[NodeList.index("0")-1]
        tempNode[NodeList.index("0")-1] = temp
        #Saving the heuristic cost in a list 
-       CostList = heruCost(tempNode, CostList, deepCounter)
+       cost = heruCost(tempNode)
+       ResultList.append([cost, tempNode, "left"])  
        tempNode=[]
        tempNode.extend(NodeList)
     else:
-        CostList.append(1000)
+        ResultList.append([1000, 1000, 1000])
     
-    if NodeList.index("0")+1 <= 8:
+    if NodeList.index("0")+1 <= 8 and NodeList.index("0") != 2 and NodeList.index("0") != 5:
        temp = tempNode[NodeList.index("0")]
        tempNode[NodeList.index("0")] = tempNode[NodeList.index("0")+1]
        tempNode[NodeList.index("0")+1] = temp
        #Saving the heuristic cost in a list 
-       CostList = heruCost(tempNode, CostList, deepCounter)
+       cost = heruCost(tempNode)
+       ResultList.append([cost, tempNode, "right"])
        tempNode=[]
        tempNode.extend(NodeList)
     else:
-        CostList.append(1000)
-    return CostList
-
-def moveNode(ClosedList, CostList, Visited, deepCounter, grandparent):
-
-    OpenList = []
+        ResultList.append([1000, 1000, 1000])
     
-    def swapPositions(list, pos1, pos2):
-        list[pos1], list[pos2] = list[pos2], list[pos1]
-        resultinglist = list
-        return resultinglist
+    return ResultList
+
+def puzzleGame(Initial_matrix, goal_matrix):
+
+    #Hashtable
+    closedList = {}
+    #Heapqueue
+    openList = []
+    deepcounter = 0
+    path = []
+    generated_puzzle = []
+
+    #push the initial_matrix with its heuristic cost to your open_list
+    for item in possibleMoves(Initial_matrix):
+        heappush(openList, item)
     
-    def switching(argument):
-        switcher = {
-        0: ClosedList.index("0")+3,
-        1: ClosedList.index("0")-3,
-        2: ClosedList.index("0")-1,
-        3: ClosedList.index("0")+1          
-        }
-        return switcher.get(minIndex, "Invalid value")
-    
-    while True:
-        minIndex = CostList.index(min(CostList))
-        switchLocation = switching(minIndex)
-        ZeroLocation = ClosedList.index("0")
-        OpenList = swapPositions(ClosedList, ZeroLocation, switchLocation)
-        print("hej")
-        print(ZeroLocation)
-        print(OpenList)
-        print(ClosedList)
-        if OpenList == grandparent:
-            CostList[minIndex] = 1000;
-        else:           
-            grandparent = ClosedList
-            ClosedList = OpenList;
-            break
-    
-    return ClosedList, grandparent
+    while len(openList) != 0:
+        #pop the matrix with the least cost from the open_list {we can call this matrix new_puzzle
+                         
+        new_puzzle = heappop(openList)
+        #add to the path the direction chosen to generate this matrix {up, left, down,right}       
+
+        path.append(new_puzzle[2])
+
+        if new_puzzle[1] in closedList.values():
+            continue
+        if new_puzzle[1] == goal_matrix:
+            return new_puzzle
+        
+        deepcounter += 1
+        closedList[deepcounter] = new_puzzle[1]
+        #MÅSTE TA MED DENNA I BERÄKNING TROR JAG?
+        print(deepcounter)
+
+        for generated_puzzle in possibleMoves(new_puzzle[1]):           
+            #push to open_list(heuristic_cost_of_generated_puzzle,
+            #generated_puzzle, direction_chosen_to_create_generated_puzzle)
+            heappush(openList, generated_puzzle)
+            
+      
+    return 0
 
 
-def puzzleGame(ClosedList, GoalNode):
-    counter = 0
-    deepCounter = 0
-    costList = []
-    puzzelList = ClosedList
-    visited = [12]
-    grandparent = []
-
-    while True:
-        if ClosedList == None:
-            print("No solution")
-            break
-        if  ClosedList == GoalNode:
-            print("End of game")
-            break
-        else:
-            costList = possibleMoves(puzzelList, deepCounter)
-            puzzelList, grandparent = moveNode(puzzelList, costList, visited, deepCounter, grandparent)
-            deepCounter += 1
-
-    return puzzelList
-
-
-ClosedList =  ["3", "1", "6", "8", "4", "5", "7", "2", "0"]
+ClosedList =  ["1", "8", "2", "0", "4", "3", "7", "6", "5"] 
 GoalNode =  ["1", "2", "3", "4", "5", "6", "7", "8", "0"]
 resultingGame = []
 
@@ -147,4 +133,3 @@ resultingGame = []
 resultingGame = puzzleGame(ClosedList, GoalNode) 
 
 print(resultingGame)
-    
